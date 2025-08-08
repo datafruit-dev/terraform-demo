@@ -284,6 +284,18 @@ resource "aws_instance" "ec2" {
   tags = { Name = "${var.name_prefix}-ec2" }
 }
 
+# Additional EC2 instance with m5.large type
+resource "aws_instance" "ec2_large" {
+  ami                         = data.aws_ami.al2023.id
+  instance_type               = "m5.large"
+  subnet_id                   = data.aws_subnets.default.ids[0]
+  vpc_security_group_ids      = [aws_security_group.ec2_sg.id]
+  iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
+  associate_public_ip_address = true
+
+  tags = { Name = "${var.name_prefix}-ec2-large" }
+}
+
 ############################
 # Outputs
 ############################
@@ -294,6 +306,14 @@ output "instance_id" {
 
 output "instance_public_ip" {
   value = aws_instance.ec2.public_ip
+}
+
+output "instance_large_id" {
+  value = aws_instance.ec2_large.id
+}
+
+output "instance_large_public_ip" {
+  value = aws_instance.ec2_large.public_ip
 }
 
 output "bucket_names_created" {
