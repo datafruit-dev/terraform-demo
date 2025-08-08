@@ -208,7 +208,10 @@ data "aws_iam_policy_document" "bucket_policy" {
     sid     = "DenyInsecureTransport"
     effect  = "Deny"
     actions = ["s3:*"]
-    principals { type = "*"; identifiers = ["*"] }
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
     resources = [each.value.arn, "${each.value.arn}/*"]
     condition {
       test     = "Bool"
@@ -222,7 +225,10 @@ data "aws_iam_policy_document" "bucket_policy" {
     sid     = "DenyBucketLevelExceptInstanceRole"
     effect  = "Deny"
     actions = ["s3:ListBucket", "s3:GetBucketLocation", "s3:ListBucketMultipartUploads"]
-    principals { type = "*"; identifiers = ["*"] }
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
     resources = [each.value.arn]
     condition {
       test     = "StringNotLike"
@@ -238,7 +244,10 @@ data "aws_iam_policy_document" "bucket_policy" {
     sid     = "DenyObjectLevelExceptInstanceRole"
     effect  = "Deny"
     actions = ["s3:*"]
-    principals { type = "*"; identifiers = ["*"] }
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
     resources = ["${each.value.arn}/*"]
     condition {
       test     = "StringNotLike"
