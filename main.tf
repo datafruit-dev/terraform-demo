@@ -29,6 +29,12 @@ variable "instance_type" {
   default     = "t3.micro"
 }
 
+variable "instance_type_2" {
+  description = "EC2 instance type for second instance."
+  type        = string
+  default     = "m5.large"
+}
+
 variable "bucket_names" {
   description = "Bucket base names. Final names are bucket_prefix + each name."
   type        = list(string)
@@ -272,7 +278,7 @@ resource "aws_s3_bucket_policy" "apply" {
   ]
 }
 
-# Finally, the EC2 instance with the instance profile attached
+# Finally, the EC2 instances with the instance profile attached
 resource "aws_instance" "ec2" {
   ami                         = data.aws_ami.al2023.id
   instance_type               = var.instance_type
@@ -282,6 +288,18 @@ resource "aws_instance" "ec2" {
   associate_public_ip_address = true
 
   tags = { Name = "${var.name_prefix}-ec2" }
+}
+
+# Second EC2 instance with m5.large type
+resource "aws_instance" "ec2_2" {
+  ami                         = data.aws_ami.al2023.id
+  instance_type               = var.instance_type_2
+  subnet_id                   = data.aws_subnets.default.ids[0]
+  vpc_security_group_ids      = [aws_security_group.ec2_sg.id]
+  iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
+  associate_public_ip_address = true
+
+  tags = { Name = "${var.name_prefix}-ec2-2" }
 }
 
 ############################
@@ -294,6 +312,14 @@ output "instance_id" {
 
 output "instance_public_ip" {
   value = aws_instance.ec2.public_ip
+}
+
+output "instance_2_id" {
+  value = aws_instance.ec2_2.id
+}
+
+output "instance_2_public_ip" {
+  value = aws_instance.ec2_2.public_ip
 }
 
 output "bucket_names_created" {
