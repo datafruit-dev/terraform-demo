@@ -29,6 +29,12 @@ variable "instance_type" {
   default     = "t3.micro"
 }
 
+variable "additional_instance_type" {
+  description = "EC2 instance type for additional instance."
+  type        = string
+  default     = "m5.large"
+}
+
 variable "bucket_names" {
   description = "Bucket base names. Final names are bucket_prefix + each name."
   type        = list(string)
@@ -282,6 +288,18 @@ resource "aws_instance" "ec2" {
   associate_public_ip_address = true
 
   tags = { Name = "${var.name_prefix}-ec2" }
+}
+
+# Additional EC2 instance with m5.large instance type
+resource "aws_instance" "ec2_additional" {
+  ami                         = data.aws_ami.al2023.id
+  instance_type               = var.additional_instance_type
+  subnet_id                   = data.aws_subnets.default.ids[0]
+  vpc_security_group_ids      = [aws_security_group.ec2_sg.id]
+  iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
+  associate_public_ip_address = true
+
+  tags = { Name = "${var.name_prefix}-ec2-additional" }
 }
 
 ############################
