@@ -1,0 +1,22 @@
+# Checkov Configuration File
+
+# Framework to scan
+framework:
+  - terraform
+
+# Output format
+output: cli
+
+# Suppress specific checks if needed (add check IDs as needed)
+# skip-check:
+#   - CKV_AWS_20  # Example: S3 Bucket Public Access
+
+# Enable all checks by default
+compact: true
+quiet: false
+
+# Download external Terraform modules
+download-external-modules: true
+
+# Evaluate variables
+evaluate-variables: true
