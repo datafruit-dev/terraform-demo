@@ -272,7 +272,7 @@ resource "aws_s3_bucket_policy" "apply" {
   ]
 }
 
-# Finally, the EC2 instance with the instance profile attached
+# Finally, the EC2 instances with the instance profile attached
 resource "aws_instance" "ec2" {
   ami                         = data.aws_ami.al2023.id
   instance_type               = var.instance_type
@@ -282,6 +282,18 @@ resource "aws_instance" "ec2" {
   associate_public_ip_address = true
 
   tags = { Name = "${var.name_prefix}-ec2" }
+}
+
+# Additional EC2 instance following the same pattern
+resource "aws_instance" "ec2_secondary" {
+  ami                         = data.aws_ami.al2023.id
+  instance_type               = var.instance_type
+  subnet_id                   = data.aws_subnets.default.ids[1 % length(data.aws_subnets.default.ids)]
+  vpc_security_group_ids      = [aws_security_group.ec2_sg.id]
+  iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
+  associate_public_ip_address = true
+
+  tags = { Name = "${var.name_prefix}-ec2-secondary" }
 }
 
 ############################
@@ -294,6 +306,14 @@ output "instance_id" {
 
 output "instance_public_ip" {
   value = aws_instance.ec2.public_ip
+}
+
+output "secondary_instance_id" {
+  value = aws_instance.ec2_secondary.id
+}
+
+output "secondary_instance_public_ip" {
+  value = aws_instance.ec2_secondary.public_ip
 }
 
 output "bucket_names_created" {
