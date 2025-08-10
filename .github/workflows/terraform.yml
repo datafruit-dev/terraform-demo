@@ -11,6 +11,7 @@ on:
       - main
     paths:
       - 'terraform/**'
+  workflow_dispatch:
 
 env:
   TF_VERSION: 1.5.0
@@ -53,11 +54,11 @@ jobs:
         id: validate
         run: terraform validate
 
-      - name: Run tflint
+      - name: Setup tflint
         uses: terraform-linters/setup-tflint@v4
         with:
           tflint_version: latest
-      
+
       - name: Initialize tflint
         run: tflint --init
 
