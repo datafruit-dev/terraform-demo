@@ -8,9 +8,18 @@ yum install -y amazon-ssm-agent
 systemctl enable amazon-ssm-agent
 systemctl start amazon-ssm-agent
 
-# Wait for SSM agent to be ready
-sleep 10
-systemctl status amazon-ssm-agent
+# Wait for SSM agent to be fully ready and registered
+echo "Waiting for SSM agent to be ready..."
+for i in {1..30}; do
+  if systemctl is-active --quiet amazon-ssm-agent; then
+    echo "SSM agent is active"
+    # Additional wait to ensure registration with SSM service
+    sleep 15
+    break
+  fi
+  echo "Waiting for SSM agent... attempt $i/30"
+  sleep 5
+done
 
 # Install Docker
 yum install -y docker
