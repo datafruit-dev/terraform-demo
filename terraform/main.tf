@@ -9,6 +9,10 @@ terraform {
       source  = "hashicorp/null"
       version = "~> 3.2"
     }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
   }
 
   backend "s3" {
@@ -33,7 +37,7 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
-# Fetch the most recent Amazon Linux 2023 AMI
+# Fetch the most recent Amazon Linux 2023 AMI (for EKS nodes)
 # AL2023 is the latest generation Amazon Linux with improved performance and security
 # It comes with systemd, DNF package manager, and better container support
 data "aws_ami" "amazon_linux_2023" {
