@@ -3,6 +3,12 @@
 # Update system
 yum update -y
 
+# Install Docker
+yum install -y docker
+systemctl start docker
+systemctl enable docker
+usermod -a -G docker ec2-user
+
 # Install Node.js 20
 curl -sL https://rpm.nodesource.com/setup_20.x | bash -
 yum install -y nodejs git
