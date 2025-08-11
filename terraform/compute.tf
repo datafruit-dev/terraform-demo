@@ -70,7 +70,7 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 # Runs FastAPI application in private subnet
 resource "aws_instance" "backend" {
   ami           = data.aws_ami.amazon_linux_2023.id
-  instance_type = "t3.micro"
+  instance_type = "t3.small"
   subnet_id     = aws_subnet.private.id
 
   vpc_security_group_ids = [aws_security_group.backend.id]
@@ -112,7 +112,7 @@ resource "aws_instance" "backend" {
 # Runs Next.js application in private subnet
 resource "aws_instance" "frontend" {
   ami           = data.aws_ami.amazon_linux_2023.id
-  instance_type = "t3.micro"
+  instance_type = "t3.small"
   subnet_id     = aws_subnet.private.id
 
   vpc_security_group_ids = [aws_security_group.frontend.id]
