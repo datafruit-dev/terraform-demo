@@ -82,8 +82,8 @@ resource "aws_instance" "backend" {
   # Metadata options for IMDSv2 (recommended for security and SSM)
   metadata_options {
     http_endpoint               = "enabled"
-    http_tokens                 = "required"
-    http_put_response_hop_limit = 1
+    http_tokens                 = "optional"  # Changed from "required" to allow SSM agent to work properly
+    http_put_response_hop_limit = 2           # Increased from 1 to allow container access
   }
 
   root_block_device {
@@ -124,8 +124,8 @@ resource "aws_instance" "frontend" {
   # Metadata options for IMDSv2 (recommended for security and SSM)
   metadata_options {
     http_endpoint               = "enabled"
-    http_tokens                 = "required"
-    http_put_response_hop_limit = 1
+    http_tokens                 = "optional"  # Changed from "required" to allow SSM agent to work properly
+    http_put_response_hop_limit = 2           # Increased from 1 to allow container access
   }
 
   root_block_device {
