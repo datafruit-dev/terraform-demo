@@ -29,6 +29,14 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
+# Get current AWS account ID and region
+data "aws_caller_identity" "current" {}
+
+data "aws_region" "current" {}
+
+# Get current AWS partition (aws, aws-cn, aws-us-gov)
+data "aws_partition" "current" {}
+
 # Fetch the most recent Amazon Linux 2023 AMI
 # AL2023 is the latest generation Amazon Linux with improved performance and security
 # It comes with systemd, DNF package manager, and better container support
