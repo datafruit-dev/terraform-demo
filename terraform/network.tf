@@ -278,6 +278,16 @@ resource "aws_vpc_security_group_egress_rule" "frontend_https_out" {
   cidr_ipv4         = "0.0.0.0/0"
 }
 
+# Frontend Egress: HTTPS to VPC for SSM endpoints
+resource "aws_vpc_security_group_egress_rule" "frontend_https_vpc" {
+  security_group_id = aws_security_group.frontend.id
+  description       = "HTTPS to VPC for SSM endpoints"
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+  cidr_ipv4         = aws_vpc.main.cidr_block
+}
+
 # Frontend Egress: HTTP to Internet
 resource "aws_vpc_security_group_egress_rule" "frontend_http_out" {
   security_group_id = aws_security_group.frontend.id
@@ -320,6 +330,16 @@ resource "aws_vpc_security_group_egress_rule" "backend_https_out" {
   to_port           = 443
   ip_protocol       = "tcp"
   cidr_ipv4         = "0.0.0.0/0"
+}
+
+# Backend Egress: HTTPS to VPC for SSM endpoints
+resource "aws_vpc_security_group_egress_rule" "backend_https_vpc" {
+  security_group_id = aws_security_group.backend.id
+  description       = "HTTPS to VPC for SSM endpoints"
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+  cidr_ipv4         = aws_vpc.main.cidr_block
 }
 
 # Backend Egress: HTTP to Internet
