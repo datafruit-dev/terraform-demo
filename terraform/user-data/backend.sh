@@ -3,6 +3,12 @@
 # Update system
 yum update -y
 
+# Install Docker
+yum install -y docker
+systemctl start docker
+systemctl enable docker
+usermod -a -G docker ec2-user
+
 # Install Python 3.11 and development tools
 yum install -y python3.11 python3.11-pip git
 
@@ -38,7 +44,6 @@ Restart=always
 [Install]
 WantedBy=multi-user.target
 EOF
-
 # Start and enable the service
 systemctl daemon-reload
 systemctl start backend
