@@ -14,12 +14,6 @@ variable "environment" {
   default     = "dev"
 }
 
-variable "application_name" {
-  description = "Name of the application"
-  type        = string
-  default     = "image-editor"
-}
-
 variable "ecr_image_count" {
   description = "Number of Docker images to keep in ECR repositories"
   type        = number
