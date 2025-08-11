@@ -3,28 +3,50 @@
 # Update system
 yum update -y
 
-# Install Node.js 20
-curl -sL https://rpm.nodesource.com/setup_20.x | bash -
-yum install -y nodejs git
+# Install Docker
+yum install -y docker
+systemctl start docker
+systemctl enable docker
 
-# Clone the application
-cd /home/ec2-user
-git clone https://github.com/datafruit-dev/image-editor.git app
-cd app/frontend
+# Add ec2-user to docker group
+usermod -a -G docker ec2-user
 
-# Set backend URL to use internal DNS (for server-side API routes)
-echo "BACKEND_URL=http://${backend_hostname}:8080" > .env.local
+# Install AWS CLI v2
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+./aws/install
 
-# Install dependencies
-npm install
+# Set variables from Terraform
+REGION="${region}"
+ACCOUNT_ID="${account_id}"
 
-# Build the application (will use the env variable)
-npm run build
+# Login to ECR
+aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com
 
-# Install PM2 to run the app
-npm install -g pm2
+# Pull and run the frontend container with backend URL
+docker pull $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/image-editor-frontend:latest
+docker run -d --name frontend --restart unless-stopped -p 3000:3000 \
+  -e BACKEND_URL=http://${backend_hostname}:8080 \
+  $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/image-editor-frontend:latest
 
-# Start the application with PM2
-pm2 start npm --name "frontend" -- start
-pm2 startup systemd -u ec2-user --hp /home/ec2-user
-pm2 save
+# Create systemd service to manage the container
+cat > /etc/systemd/system/frontend.service << EOF
+[Unit]
+Description=Image Editor Frontend Container
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/docker start frontend
+ExecStop=/usr/bin/docker stop frontend
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Enable the service
+systemctl daemon-reload
+systemctl enable frontend
