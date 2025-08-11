@@ -76,6 +76,16 @@ resource "aws_instance" "backend" {
   vpc_security_group_ids = [aws_security_group.backend.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
   
+  # Enable detailed monitoring for better SSM integration
+  monitoring = true
+  
+  # Metadata options for IMDSv2 (recommended for security and SSM)
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 1
+  }
+  
   root_block_device {
     volume_type = "gp3"
     volume_size = 20
@@ -85,16 +95,20 @@ resource "aws_instance" "backend" {
     aws_region            = var.aws_region
     ecr_registry          = aws_ecr_repository.backend.repository_url
     ecr_backend_repository = aws_ecr_repository.backend.repository_url
-  }))
+  })
 
-  depends_on = [aws_ecr_repository.backend]
+  # Ensure VPC endpoints are created before the instance
+  depends_on = [
+    aws_ecr_repository.backend,
+    aws_vpc_endpoint.ssm,
+    aws_vpc_endpoint.ssm_messages,
+    aws_vpc_endpoint.ec2_messages
+  ]
 
   tags = {
-    Name = "image-editor-backend"
+    Name = "image-editor-backend-1"
   }
 }
-
-# Frontend EC2 Instance
 # Runs Next.js application in private subnet
 resource "aws_instance" "frontend" {
   ami           = data.aws_ami.amazon_linux_2023.id
@@ -103,6 +117,16 @@ resource "aws_instance" "frontend" {
   
   vpc_security_group_ids = [aws_security_group.frontend.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
+  
+  # Enable detailed monitoring for better SSM integration
+  monitoring = true
+  
+  # Metadata options for IMDSv2 (recommended for security and SSM)
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 1
+  }
   
   root_block_device {
     volume_type = "gp3"
@@ -114,15 +138,21 @@ resource "aws_instance" "frontend" {
     ecr_registry           = aws_ecr_repository.frontend.repository_url
     ecr_frontend_repository = aws_ecr_repository.frontend.repository_url
     backend_hostname       = local.backend_hostname
-  }))
+  })
 
-  depends_on = [aws_ecr_repository.frontend, aws_instance.backend]
+  # Ensure VPC endpoints are created before the instance
+  depends_on = [
+    aws_ecr_repository.frontend,
+    aws_instance.backend,
+    aws_vpc_endpoint.ssm,
+    aws_vpc_endpoint.ssm_messages,
+    aws_vpc_endpoint.ec2_messages
+  ]
 
   tags = {
-    Name = "image-editor-frontend"
+    Name = "image-editor-frontend-1"
   }
 }
-
 # =============================================================================
 # APPLICATION LOAD BALANCER
 # =============================================================================
