@@ -213,13 +213,15 @@ resource "null_resource" "wait_for_backend_ssm" {
   provisioner "local-exec" {
     command = <<-EOT
       echo "Waiting for backend instance ${aws_instance.backend.id} to register with SSM..."
-      for i in {1..30}; do
-        if aws ssm describe-instance-information --region ${var.aws_region} --filters "Key=InstanceIds,Values=${aws_instance.backend.id}" --query 'InstanceInformationList[0].PingStatus' --output text | grep -q "Online"; then
+      i=1
+      while [ $i -le 30 ]; do
+        if aws ssm describe-instance-information --region ${var.aws_region} --filters "Key=InstanceIds,Values=${aws_instance.backend.id}" --query 'InstanceInformationList[0].PingStatus' --output text 2>/dev/null | grep -q "Online"; then
           echo "Backend instance is registered with SSM and online"
           exit 0
         fi
         echo "Attempt $i/30: Instance not yet registered with SSM, waiting 30 seconds..."
         sleep 30
+        i=$((i + 1))
       done
       echo "ERROR: Backend instance failed to register with SSM after 15 minutes"
       exit 1
@@ -238,13 +240,15 @@ resource "null_resource" "wait_for_frontend_ssm" {
   provisioner "local-exec" {
     command = <<-EOT
       echo "Waiting for frontend instance ${aws_instance.frontend.id} to register with SSM..."
-      for i in {1..30}; do
-        if aws ssm describe-instance-information --region ${var.aws_region} --filters "Key=InstanceIds,Values=${aws_instance.frontend.id}" --query 'InstanceInformationList[0].PingStatus' --output text | grep -q "Online"; then
+      i=1
+      while [ $i -le 30 ]; do
+        if aws ssm describe-instance-information --region ${var.aws_region} --filters "Key=InstanceIds,Values=${aws_instance.frontend.id}" --query 'InstanceInformationList[0].PingStatus' --output text 2>/dev/null | grep -q "Online"; then
           echo "Frontend instance is registered with SSM and online"
           exit 0
         fi
         echo "Attempt $i/30: Instance not yet registered with SSM, waiting 30 seconds..."
         sleep 30
+        i=$((i + 1))
       done
       echo "ERROR: Frontend instance failed to register with SSM after 15 minutes"
       exit 1
