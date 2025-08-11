@@ -27,6 +27,35 @@ resource "aws_iam_role_policy_attachment" "ssm_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
+# IAM Policy for ECR Access
+# Allows EC2 instances to pull Docker images from ECR
+resource "aws_iam_policy" "ecr_pull_policy" {
+  name        = "image-editor-ecr-pull-policy"
+  description = "Policy to allow EC2 instances to pull images from ECR"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ecr:GetAuthorizationToken",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Attach ECR policy to EC2 role
+resource "aws_iam_role_policy_attachment" "ecr_policy" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = aws_iam_policy.ecr_pull_policy.arn
+}
+
 # Instance Profile to attach IAM role to EC2
 resource "aws_iam_instance_profile" "ec2_profile" {
   name = "image-editor-ec2-profile"
@@ -52,7 +81,13 @@ resource "aws_instance" "backend" {
     volume_size = 20
   }
  
-  user_data = base64encode(file("${path.module}/user-data/backend.sh"))
+  user_data = base64encode(templatefile("${path.module}/user-data/backend-docker.sh", {
+    aws_region            = var.aws_region
+    ecr_registry          = aws_ecr_repository.backend.repository_url
+    ecr_backend_repository = aws_ecr_repository.backend.repository_url
+  }))
+
+  depends_on = [aws_ecr_repository.backend]
 
   tags = {
     Name = "image-editor-backend"
@@ -74,11 +109,14 @@ resource "aws_instance" "frontend" {
     volume_size = 20
   }
   
-  user_data = base64encode(templatefile("${path.module}/user-data/frontend.sh", {
-    backend_hostname = local.backend_hostname
+  user_data = base64encode(templatefile("${path.module}/user-data/frontend-docker.sh", {
+    aws_region             = var.aws_region
+    ecr_registry           = aws_ecr_repository.frontend.repository_url
+    ecr_frontend_repository = aws_ecr_repository.frontend.repository_url
+    backend_hostname       = local.backend_hostname
   }))
-  
-  depends_on = [aws_instance.backend]
+
+  depends_on = [aws_ecr_repository.frontend, aws_instance.backend]
 
   tags = {
     Name = "image-editor-frontend"
