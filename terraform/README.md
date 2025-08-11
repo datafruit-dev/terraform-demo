@@ -19,6 +19,7 @@ Internet → ALB (Public Subnet) → Frontend (Private Subnet) → Backend (Priv
 ### Components
 - **VPC**: Custom network with public and private subnets
 - **ALB**: Application Load Balancer in public subnets for HA
+- **ECR**: Elastic Container Registry for Docker images
 - **EC2 Instances**: t3.small instances for frontend and backend
 - **Security Groups**: Strict ingress/egress rules for each tier
 - **NAT Gateway**: Single NAT for cost optimization (see note below)
@@ -27,7 +28,8 @@ Internet → ALB (Public Subnet) → Frontend (Private Subnet) → Backend (Priv
 
 1. AWS CLI configured with appropriate credentials
 2. Terraform >= 1.0 installed
-3. Update the git repository URL in `user-data/*.sh` files
+3. Docker images pushed to ECR repositories (see CI/CD section)
+4. Ensure ECR repositories exist before deploying EC2 instances
 
 ## Deployment Steps
 
@@ -44,6 +46,21 @@ terraform apply
 # Get the application URL
 terraform output app_url
 ```
+
+## CI/CD Integration
+
+This infrastructure is designed to work with the GitHub Actions workflow in the `image-editor` repository:
+
+1. **ECR Repositories**: Two repositories are created:
+   - `image-editor-backend`: For the FastAPI backend
+   - `image-editor-frontend`: For the Next.js frontend
+
+2. **Deployment Flow**:
+   - GitHub Actions builds and pushes images to ECR
+   - EC2 instances pull latest images from ECR on startup
+   - Images are tagged with both commit SHA and `latest`
+
+3. **IAM Permissions**: EC2 instances have ECR pull permissions via IAM roles
 
 ## Important Notes
 
