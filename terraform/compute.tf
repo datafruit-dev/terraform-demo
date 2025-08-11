@@ -106,7 +106,7 @@ resource "aws_instance" "backend" {
   ]
 
   tags = {
-    Name = "image-editor-backend-1"
+    Name = "image-editor-backend"
   }
 }
 # Runs Next.js application in private subnet
@@ -150,7 +150,7 @@ resource "aws_instance" "frontend" {
   ]
 
   tags = {
-    Name = "image-editor-frontend-1"
+    Name = "image-editor-frontend"
   }
 }
 # =============================================================================
