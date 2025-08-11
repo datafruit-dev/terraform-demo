@@ -3,6 +3,15 @@
 # Update system
 yum update -y
 
+# Install and start SSM Agent (should be pre-installed on AL2023, but ensure it's running)
+yum install -y amazon-ssm-agent
+systemctl enable amazon-ssm-agent
+systemctl start amazon-ssm-agent
+
+# Wait for SSM agent to be ready
+sleep 10
+systemctl status amazon-ssm-agent
+
 # Install Docker
 yum install -y docker
 systemctl start docker
