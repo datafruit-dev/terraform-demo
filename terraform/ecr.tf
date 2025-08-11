@@ -99,7 +99,7 @@ resource "aws_ecr_lifecycle_policy" "frontend" {
 # =============================================================================
 
 # Repository policy for backend ECR
-# Allows pulling images from EC2 instances and GitHub Actions
+# Allows pulling images from EKS nodes and GitHub Actions
 resource "aws_ecr_repository_policy" "backend" {
   repository = aws_ecr_repository.backend.name
 
@@ -107,10 +107,10 @@ resource "aws_ecr_repository_policy" "backend" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "AllowPullFromEC2"
+        Sid    = "AllowPullFromEKS"
         Effect = "Allow"
         Principal = {
-          AWS = aws_iam_role.ec2_role.arn
+          AWS = aws_iam_role.eks_node_group.arn
         }
         Action = [
           "ecr:GetDownloadUrlForLayer",
@@ -123,7 +123,7 @@ resource "aws_ecr_repository_policy" "backend" {
 }
 
 # Repository policy for frontend ECR
-# Allows pulling images from EC2 instances and GitHub Actions
+# Allows pulling images from EKS nodes and GitHub Actions
 resource "aws_ecr_repository_policy" "frontend" {
   repository = aws_ecr_repository.frontend.name
 
@@ -131,10 +131,10 @@ resource "aws_ecr_repository_policy" "frontend" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "AllowPullFromEC2"
+        Sid    = "AllowPullFromEKS"
         Effect = "Allow"
         Principal = {
-          AWS = aws_iam_role.ec2_role.arn
+          AWS = aws_iam_role.eks_node_group.arn
         }
         Action = [
           "ecr:GetDownloadUrlForLayer",
