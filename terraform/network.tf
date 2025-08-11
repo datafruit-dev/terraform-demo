@@ -244,6 +244,25 @@ resource "aws_vpc_security_group_ingress_rule" "alb_https" {
   cidr_ipv4         = "0.0.0.0/0"
 }
 
+# ALB Egress: To EKS nodes on NodePort range
+resource "aws_vpc_security_group_egress_rule" "alb_to_eks_nodes" {
+  security_group_id            = aws_security_group.alb.id
+  description                  = "Allow ALB to communicate with EKS nodes"
+  from_port                    = 30000
+  to_port                      = 32767
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.eks_nodes.id
+}
+
+# ALB Egress: Health checks to EKS nodes
+resource "aws_vpc_security_group_egress_rule" "alb_health_checks" {
+  security_group_id = aws_security_group.alb.id
+  description       = "Allow ALB health checks to EKS nodes"
+  from_port         = 10254
+  to_port           = 10254
+  ip_protocol       = "tcp"
+  cidr_ipv4         = aws_vpc.main.cidr_block
+}
 # ALB Egress: To Frontend on port 3000
 resource "aws_vpc_security_group_egress_rule" "alb_to_frontend" {
   security_group_id            = aws_security_group.alb.id
@@ -369,18 +388,21 @@ resource "aws_route53_zone" "internal" {
   }
 }
 
-# DNS record for backend service
-resource "aws_route53_record" "backend" {
-  zone_id = aws_route53_zone.internal.zone_id
-  name    = local.backend_hostname
-  type    = "A"
-  ttl     = 300
-  records = [aws_instance.backend.private_ip]
-}
-
+# DNS record for backend service - now handled by Kubernetes internal DNS
+# The backend service is accessible at:
+# - backend.image-editor.svc.cluster.local (within the cluster)
+# - Via the ALB for external access
+#
+# Keeping the Route53 zone for potential future use with external-dns controller
+# which can automatically manage DNS records for Kubernetes services/ingresses
 
 # =============================================================================
 # OPTIONAL: SSH ACCESS (for debugging - remove in production)
+# =============================================================================
+# Note: With EKS, you can use kubectl exec to access pods directly
+# Example: kubectl exec -it <pod-name> -n image-editor -- /bin/bash
+# This is more secure than SSH access and doesn't require bastion hosts
+#
 # =============================================================================
 
 # Security Group for SSH Bastion/Jump Host (Optional)
