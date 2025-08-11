@@ -190,8 +190,8 @@ resource "aws_security_group" "alb" {
 # Security Group for Frontend EC2 Instance
 # Only accepts traffic from the ALB, not directly from internet
 # This implements the security requirement that frontend is not directly accessible
-# Can communicate with backend for API calls
-resource "aws_security_group" "frontend" {
+# Can communicate with backend for API calls (kept for compatibility)
+resource "aws_security_group" "frontend" {  
   name        = "image-editor-frontend-sg"
   description = "Security group for Frontend EC2 - only allows traffic from ALB"
   vpc_id      = aws_vpc.main.id
@@ -204,8 +204,8 @@ resource "aws_security_group" "frontend" {
 
 # Security Group for Backend (FastAPI) EC2 Instance
 # Most restricted security group - only accepts traffic from frontend
-# This implements the security requirement that backend is isolated
-resource "aws_security_group" "backend" {
+# This implements the security requirement that backend is isolated (kept for compatibility)
+resource "aws_security_group" "backend" {  
   name        = "image-editor-backend-sg"
   description = "Security group for Backend EC2 - only allows traffic from Frontend"
   vpc_id      = aws_vpc.main.id
@@ -244,15 +244,18 @@ resource "aws_vpc_security_group_ingress_rule" "alb_https" {
   cidr_ipv4         = "0.0.0.0/0"
 }
 
-# ALB Egress: To Frontend on port 3000
-resource "aws_vpc_security_group_egress_rule" "alb_to_frontend" {
+# ALB Egress: To EKS nodes (for ingress controller)
+# This allows ALB to reach the NodePort services on EKS nodes
+resource "aws_vpc_security_group_egress_rule" "alb_to_eks_nodes" {
   security_group_id            = aws_security_group.alb.id
-  description                  = "Allow ALB to communicate with Frontend"
-  from_port                    = 3000
-  to_port                      = 3000
+  description                  = "Allow ALB to communicate with EKS nodes"
+  from_port                    = 30000
+  to_port                      = 32767
   ip_protocol                  = "tcp"
-  referenced_security_group_id = aws_security_group.frontend.id
+  referenced_security_group_id = aws_security_group.eks_nodes.id
 }
+
+# Note: The actual ALB will be created by the AWS Load Balancer Controller when the Ingress resource is deployed
 
 # -----------------------------------------------------------------------------
 # Frontend Security Group Rules
@@ -369,14 +372,15 @@ resource "aws_route53_zone" "internal" {
   }
 }
 
-# DNS record for backend service
-resource "aws_route53_record" "backend" {
-  zone_id = aws_route53_zone.internal.zone_id
-  name    = local.backend_hostname
-  type    = "A"
-  ttl     = 300
-  records = [aws_instance.backend.private_ip]
-}
+# DNS record for backend service (commented out for EKS - using Kubernetes service discovery)
+# In EKS, services communicate via Kubernetes DNS (backend-service.image-editor.svc.cluster.local)
+# resource "aws_route53_record" "backend" {
+#   zone_id = aws_route53_zone.internal.zone_id
+#   name    = local.backend_hostname
+#   type    = "A"
+#   ttl     = 300
+#   records = [aws_instance.backend.private_ip]
+# }
 
 
 # =============================================================================
