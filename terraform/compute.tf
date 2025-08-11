@@ -27,6 +27,33 @@ resource "aws_iam_role_policy_attachment" "ssm_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
+# ECR Policy for EC2 instances to pull images
+resource "aws_iam_role_policy" "ecr_policy" {
+  name = "image-editor-ecr-policy"
+  role = aws_iam_role.ec2_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ecr:GetAuthorizationToken",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = "ecr:GetAuthorizationToken"
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 # Instance Profile to attach IAM role to EC2
 resource "aws_iam_instance_profile" "ec2_profile" {
   name = "image-editor-ec2-profile"
@@ -43,15 +70,15 @@ resource "aws_instance" "backend" {
   ami           = data.aws_ami.amazon_linux_2023.id
   instance_type = "t3.micro"
   subnet_id     = aws_subnet.private.id
-  
+
   vpc_security_group_ids = [aws_security_group.backend.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
-  
+
   root_block_device {
     volume_type = "gp3"
     volume_size = 20
   }
- 
+
   user_data = base64encode(file("${path.module}/user-data/backend.sh"))
 
   tags = {
@@ -65,19 +92,19 @@ resource "aws_instance" "frontend" {
   ami           = data.aws_ami.amazon_linux_2023.id
   instance_type = "t3.micro"
   subnet_id     = aws_subnet.private.id
-  
+
   vpc_security_group_ids = [aws_security_group.frontend.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
-  
+
   root_block_device {
     volume_type = "gp3"
     volume_size = 20
   }
-  
+
   user_data = base64encode(templatefile("${path.module}/user-data/frontend.sh", {
     backend_hostname = local.backend_hostname
   }))
-  
+
   depends_on = [aws_instance.backend]
 
   tags = {
