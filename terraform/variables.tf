@@ -19,3 +19,10 @@ variable "enable_ecr_scanning" {
   type        = bool
   default     = true
 }
+
+variable "eks_node_ssh_key_name" {
+  description = "Name of the SSH key pair for EKS nodes (optional)"
+  type        = string
+  default     = ""
+}
+
