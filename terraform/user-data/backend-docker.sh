@@ -3,18 +3,36 @@
 # Update system
 yum update -y
 
-# Install and start SSM Agent (should be pre-installed on AL2023, but ensure it's running)
+# Install CloudWatch agent for better logging
+yum install -y amazon-cloudwatch-agent
+
+# Ensure SSM Agent is installed and updated
 yum install -y amazon-ssm-agent
+
+# Stop SSM agent to configure it properly
+systemctl stop amazon-ssm-agent
+
+# Create SSM agent configuration directory if it doesn't exist
+mkdir -p /etc/amazon/ssm
+
+# Configure SSM agent to use the correct region
+echo "${aws_region}" > /etc/amazon/ssm/region
+
+# Start and enable SSM agent
 systemctl enable amazon-ssm-agent
 systemctl start amazon-ssm-agent
 
 # Wait for SSM agent to be fully ready and registered
 echo "Waiting for SSM agent to be ready..."
-for i in {1..30}; do
+for i in {1..60}; do
   if systemctl is-active --quiet amazon-ssm-agent; then
     echo "SSM agent is active"
-    # Additional wait to ensure registration with SSM service
-    sleep 15
+    # Check if the agent has registered with SSM
+    if sudo amazon-ssm-agent -fingerprint 2>&1 | grep -q "Instance"; then
+      echo "SSM agent is registered"
+      # Additional wait to ensure full registration
+      sleep 20
+    fi
     break
   fi
   echo "Waiting for SSM agent... attempt $i/30"
