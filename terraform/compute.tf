@@ -199,3 +199,57 @@ resource "aws_lb_target_group_attachment" "frontend" {
   target_group_arn = aws_lb_target_group.frontend.arn
   target_id        = aws_instance.frontend.id
 }
+
+# =============================================================================
+# SSM READINESS CHECK
+# =============================================================================
+
+# Wait for backend instance to register with SSM before deployment
+resource "null_resource" "wait_for_backend_ssm" {
+  triggers = {
+    instance_id = aws_instance.backend.id
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      echo "Waiting for backend instance ${aws_instance.backend.id} to register with SSM..."
+      for i in {1..30}; do
+        if aws ssm describe-instance-information --region ${var.aws_region} --filters "Key=InstanceIds,Values=${aws_instance.backend.id}" --query 'InstanceInformationList[0].PingStatus' --output text | grep -q "Online"; then
+          echo "Backend instance is registered with SSM and online"
+          exit 0
+        fi
+        echo "Attempt $i/30: Instance not yet registered with SSM, waiting 30 seconds..."
+        sleep 30
+      done
+      echo "ERROR: Backend instance failed to register with SSM after 15 minutes"
+      exit 1
+    EOT
+  }
+
+  depends_on = [aws_instance.backend]
+}
+
+# Wait for frontend instance to register with SSM before deployment
+resource "null_resource" "wait_for_frontend_ssm" {
+  triggers = {
+    instance_id = aws_instance.frontend.id
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      echo "Waiting for frontend instance ${aws_instance.frontend.id} to register with SSM..."
+      for i in {1..30}; do
+        if aws ssm describe-instance-information --region ${var.aws_region} --filters "Key=InstanceIds,Values=${aws_instance.frontend.id}" --query 'InstanceInformationList[0].PingStatus' --output text | grep -q "Online"; then
+          echo "Frontend instance is registered with SSM and online"
+          exit 0
+        fi
+        echo "Attempt $i/30: Instance not yet registered with SSM, waiting 30 seconds..."
+        sleep 30
+      done
+      echo "ERROR: Frontend instance failed to register with SSM after 15 minutes"
+      exit 1
+    EOT
+  }
+
+  depends_on = [aws_instance.frontend]
+}

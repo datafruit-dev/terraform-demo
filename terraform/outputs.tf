@@ -56,3 +56,16 @@ output "ecr_registry_id" {
   description = "The registry ID where the repositories are created"
   value       = aws_ecr_repository.backend.registry_id
 }
+
+# Instance IDs for deployment
+output "backend_instance_id" {
+  description = "Backend EC2 instance ID (ready for SSM commands)"
+  value       = aws_instance.backend.id
+  depends_on  = [null_resource.wait_for_backend_ssm]
+}
+
+output "frontend_instance_id" {
+  description = "Frontend EC2 instance ID (ready for SSM commands)"
+  value       = aws_instance.frontend.id
+  depends_on  = [null_resource.wait_for_frontend_ssm]
+}
