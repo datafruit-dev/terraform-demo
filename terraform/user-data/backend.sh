@@ -3,43 +3,48 @@
 # Update system
 yum update -y
 
-# Install Python 3.11 and development tools
-yum install -y python3.11 python3.11-pip git
+# Install Docker
+yum install -y docker
+systemctl start docker
+systemctl enable docker
 
-# Install system dependencies for Pillow
-yum install -y gcc python3-devel libjpeg-devel zlib-devel
+# Add ec2-user to docker group
+usermod -a -G docker ec2-user
 
-# Clone the application
-cd /home/ec2-user
-git clone https://github.com/datafruit-dev/image-editor.git app
-cd app/backend
+# Install AWS CLI v2
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+./aws/install
 
-# Create virtual environment
-python3.11 -m venv venv
-source venv/bin/activate
+# Set variables from Terraform
+REGION="${region}"
+ACCOUNT_ID="${account_id}"
 
-# Install Python dependencies
-pip install fastapi uvicorn pillow numpy psutil python-multipart aiofiles
+# Login to ECR
+aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com
 
-# Create systemd service for the backend
+# Pull and run the backend container
+docker pull $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/image-editor-backend:latest
+docker run -d --name backend --restart unless-stopped -p 8080:8080 $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/image-editor-backend:latest
+
+# Create systemd service to manage the container
 cat > /etc/systemd/system/backend.service << EOF
 [Unit]
-Description=Image Editor Backend
-After=network.target
+Description=Image Editor Backend Container
+After=docker.service
+Requires=docker.service
 
 [Service]
-Type=simple
-User=ec2-user
-WorkingDirectory=/home/ec2-user/app/backend
-Environment="PATH=/home/ec2-user/app/backend/venv/bin"
-ExecStart=/home/ec2-user/app/backend/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8080
-Restart=always
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/docker start backend
+ExecStop=/usr/bin/docker stop backend
+TimeoutStartSec=0
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-# Start and enable the service
+# Enable the service
 systemctl daemon-reload
-systemctl start backend
 systemctl enable backend
