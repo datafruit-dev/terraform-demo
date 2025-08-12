@@ -55,25 +55,30 @@ resource "aws_subnet" "public" {
   map_public_ip_on_launch = true # Auto-assign public IPs to instances launched here
 
   tags = {
-    Name = "image-editor-public-subnet-${count.index + 1}"
-    Type = "Public"
+    Name                                        = "image-editor-public-subnet-${count.index + 1}"
+    Type                                        = "Public"
+    "kubernetes.io/cluster/image-editor-cluster" = "shared"
+    "kubernetes.io/role/elb"                    = "1"
   }
 }
 
-# Private Subnet for Frontend and Backend EC2 instances
-# This subnet has no direct internet route - only through NAT Gateway
+# Private Subnets for EKS nodes and EC2 instances
+# These subnets have no direct internet route - only through NAT Gateway
 # This provides security by preventing direct inbound connections from internet
-# Both frontend and backend servers will be placed here for protection
-# Using offset of 10 to clearly separate from public subnet ranges
-# Single subnet simplifies architecture and reduces cross-AZ data transfer costs
+# EKS nodes and EC2 instances will be placed here for protection
+# Using offset of 10+ to clearly separate from public subnet ranges
+# Multiple subnets across AZs for high availability
 resource "aws_subnet" "private" {
+  count             = 2
   vpc_id            = aws_vpc.main.id
-  cidr_block        = cidrsubnet("10.0.0.0/16", 8, 10) # 10.0.10.0/24
-  availability_zone = data.aws_availability_zones.available.names[0]
+  cidr_block        = cidrsubnet("10.0.0.0/16", 8, 10 + count.index) # 10.0.10.0/24, 10.0.11.0/24
+  availability_zone = data.aws_availability_zones.available.names[count.index]
 
   tags = {
-    Name = "image-editor-private-subnet"
-    Type = "Private"
+    Name                                         = "image-editor-private-subnet-${count.index + 1}"
+    Type                                         = "Private"
+    "kubernetes.io/cluster/image-editor-cluster" = "shared"
+    "kubernetes.io/role/internal-elb"            = "1"
   }
 }
 
@@ -160,11 +165,12 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public.id
 }
 
-# Route Table Association for Private Subnet
-# Links the private subnet to the private route table
+# Route Table Associations for Private Subnets
+# Links each private subnet to the private route table
 # Ensures private subnet traffic goes through NAT for internet access
 resource "aws_route_table_association" "private" {
-  subnet_id      = aws_subnet.private.id
+  count          = 2
+  subnet_id      = aws_subnet.private[count.index].id
   route_table_id = aws_route_table.private.id
 }
 # =============================================================================
