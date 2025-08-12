@@ -369,14 +369,14 @@ resource "aws_route53_zone" "internal" {
   }
 }
 
-# DNS record for backend service
-resource "aws_route53_record" "backend" {
-  zone_id = aws_route53_zone.internal.zone_id
-  name    = local.backend_hostname
-  type    = "A"
-  ttl     = 300
-  records = [aws_instance.backend.private_ip]
-}
+# DNS record for backend service - commented out as we're using EKS now
+# resource "aws_route53_record" "backend" {
+#   zone_id = aws_route53_zone.internal.zone_id
+#   name    = local.backend_hostname
+#   type    = "A"
+#   ttl     = 300
+#   records = [aws_instance.backend.private_ip]
+# }
 
 
 # =============================================================================
