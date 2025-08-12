@@ -2,28 +2,8 @@
 # OUTPUTS
 # =============================================================================
 
-# Application URL
-output "app_url" {
-  description = "URL to access the application"
-  value       = "http://${aws_lb.main.dns_name}"
-}
-
-# Load Balancer DNS
-output "alb_dns_name" {
-  description = "DNS name of the Application Load Balancer"
-  value       = aws_lb.main.dns_name
-}
-
-# Private IPs for debugging
-output "frontend_private_ip" {
-  description = "Private IP of the Frontend instance"
-  value       = aws_instance.frontend.private_ip
-}
-
-output "backend_private_ip" {
-  description = "Private IP of the Backend instance"
-  value       = aws_instance.backend.private_ip
-}
+# Note: Application URL will be available through the Kubernetes Ingress
+# Run: kubectl get ingress image-editor-ingress -n image-editor
 
 # VPC and Subnet IDs
 output "vpc_id" {
@@ -53,19 +33,32 @@ output "ecr_frontend_repository_url" {
 
 # ECR Registry ID
 output "ecr_registry_id" {
-  description = "The registry ID where the repositories are created"
   value       = aws_ecr_repository.backend.registry_id
 }
 
-# Instance IDs for deployment
-output "backend_instance_id" {
-  description = "Backend EC2 instance ID (ready for SSM commands)"
-  value       = aws_instance.backend.id
-  depends_on  = [null_resource.wait_for_backend_ssm]
+# EKS Cluster Outputs
+output "eks_cluster_name" {
+  description = "Name of the EKS cluster"
+  value       = aws_eks_cluster.main.name
 }
 
-output "frontend_instance_id" {
-  description = "Frontend EC2 instance ID (ready for SSM commands)"
-  value       = aws_instance.frontend.id
-  depends_on  = [null_resource.wait_for_frontend_ssm]
+output "eks_cluster_endpoint" {
+  description = "Endpoint for EKS control plane"
+  value       = aws_eks_cluster.main.endpoint
+}
+
+output "eks_cluster_security_group_id" {
+  description = "Security group ID attached to the EKS cluster"
+  value       = aws_eks_cluster.main.vpc_config[0].cluster_security_group_id
+}
+
+output "eks_cluster_certificate_authority_data" {
+  description = "Base64 encoded certificate data required to communicate with the cluster"
+  value       = aws_eks_cluster.main.certificate_authority[0].data
+  sensitive   = true
+}
+
+output "eks_oidc_provider_arn" {
+  description = "ARN of the OIDC Provider for IRSA"
+  value       = aws_iam_openid_connect_provider.eks.arn
 }
