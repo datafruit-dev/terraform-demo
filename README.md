@@ -144,3 +144,24 @@ terraform destroy
 ## 📝 License
 
 This project is for demonstration purposes.
+
+---
+
+## 🔍 Health Check
+
+A new health check script has been added to help monitor the deployed application:
+
+```bash
+# Run comprehensive health check
+./scripts/health-check.sh
+```
+
+This script will check:
+- Kubernetes cluster connectivity
+- Namespace existence
+- Deployment status (backend and frontend)
+- Service availability
+- Ingress configuration
+- Pod health
+
+The script provides clear visual feedback with emojis and helpful troubleshooting tips.
